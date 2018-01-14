@@ -28,7 +28,7 @@ try {
             }
             stage("Deploy Image") {
                 openshiftDeploy deploymentConfig: appName, namespace: project
-                openshiftVerifyDeployment bldCfg: "${appName}", namespace: project, waitTime: '2', waitUnit: 'min'
+                openshiftVerifyDeployment depCfg: "${appName}", namespace: project, waitTime: '2', waitUnit: 'min'
             }
 
             stage("Webservice Testing") {
