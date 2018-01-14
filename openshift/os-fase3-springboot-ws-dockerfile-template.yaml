@@ -1,67 +1,54 @@
 apiVersion: v1
 kind: List
 metadata:
-  name: springboot-ws-s2i
+  name: springboot-ws-dockerfile
 items:
 - apiVersion: v1
   kind: ImageStream
   metadata:
     labels:
-      app: springboot-ws-s2i
-    name: springboot-ws-s2i
+      app: springboot-ws-dockerfile
+    name: springboot-ws-dockerfile
   spec: {}
-- apiVersion: v1
-  kind: ImageStream
-  metadata:
-    name: redhat-openjdk18-openshift
-    annotations:
-      openshift.io/display-name: Red Hat OpenJDK 8
-  spec:
-    dockerImageRepository: registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift
-    tags:
-    - name: '1.1'
-      annotations:
-        openshift.io/display-name: Red Hat OpenJDK 8
-        description: Build and run Java applications using Maven and OpenJDK 8.
-        iconClass: icon-jboss
-        tags: builder,java,xpaas,openjdk
-        supports: java:8,xpaas:1.4
-        version: '1.1'
 - apiVersion: v1
   kind: BuildConfig
   metadata:
     labels:
-      app: springboot-ws-s2i
-    name: springboot-ws-s2i
+      app: springboot-ws-dockerfile
+    name: springboot-ws-dockerfile
   spec:
     output:
       to:
         kind: ImageStreamTag
-        name: springboot-ws-s2i:latest
+        name: springboot-ws-dockerfile:latest
     postCommit: {}
     resources: {}
     runPolicy: Serial
     source:
-      type: Binary
+      dockerfile: |-
+          FROM jboss/base-jdk:8
+          ADD fatjar.jar fatjar.jar
+          CMD java -Djava.security.egd=file:/dev/./urandom -jar fatjar.jar
       binary: {}
+      type: Dockerfile
     strategy:
-      sourceStrategy:
-        from:
-          kind: ImageStreamTag
-          name: 'redhat-openjdk18-openshift:latest'
-      type: Source
+        dockerStrategy:
+          from:
+            kind: DockerImage
+            name: "jboss/base-jdk:8"
+        type: Docker
     triggers: {}
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
     labels:
-      app: springboot-ws-s2i
-    name: springboot-ws-s2i
+      app: springboot-ws-dockerfile
+    name: springboot-ws-dockerfile
   spec:
     replicas: 1
     selector:
-      app: springboot-ws-s2i
-      deploymentconfig: springboot-ws-s2i
+      app: springboot-ws-dockerfile
+      deploymentconfig: springboot-ws-dockerfile
     strategy:
       rollingParams:
         intervalSeconds: 1
@@ -73,13 +60,13 @@ items:
     template:
       metadata:
         labels:
-          app: springboot-ws-s2i
-          deploymentconfig: springboot-ws-s2i
+          app: springboot-ws-dockerfile
+          deploymentconfig: springboot-ws-dockerfile
       spec:
         containers:
-        - image: springboot-ws-s2i:latest
+        - image: springboot-ws-dockerfile:latest
           imagePullPolicy: Always
-          name: springboot-ws-s2i
+          name: springboot-ws-dockerfile
           ports:
           - containerPort: 8080
             protocol: TCP
@@ -105,18 +92,18 @@ items:
     - imageChangeParams:
         automatic: true
         containerNames:
-        - springboot-ws-s2i
+        - springboot-ws-dockerfile
         from:
           kind: ImageStreamTag
-          name: springboot-ws-s2i:latest
+          name: springboot-ws-dockerfile:latest
       type: ImageChange
   status: {}
 - apiVersion: v1
   kind: Service
   metadata:
     labels:
-      app: springboot-ws-s2i
-    name: springboot-ws-s2i
+      app: springboot-ws-dockerfile
+    name: springboot-ws-dockerfile
   spec:
     ports:
     - name: 8080-tcp
@@ -124,8 +111,8 @@ items:
       protocol: TCP
       targetPort: 8080
     selector:
-      app: springboot-ws-s2i
-      deploymentconfig: springboot-ws-s2i
+      app: springboot-ws-dockerfile
+      deploymentconfig: springboot-ws-dockerfile
     sessionAffinity: None
     type: ClusterIP
   status:
@@ -133,13 +120,13 @@ items:
 - apiVersion: v1
   kind: Route
   metadata:
-    name: springboot-ws-s2i
+    name: springboot-ws-dockerfile
     labels:
-      app: springboot-ws-s2i
+      app: springboot-ws-dockerfile
   spec:
     to:
       kind: Service
-      name: springboot-ws-s2i
+      name: springboot-ws-dockerfile
       weight: 100
     port:
       targetPort: 8080-tcp
