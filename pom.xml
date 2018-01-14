@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>nl.belastingdienst.bcao.jos</groupId>
-    <artifactId>os-fase3-spingboot-ws</artifactId>
+    <artifactId>os-fase3-springboot-ws</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <parent>
@@ -41,5 +41,14 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>openshift</id>
+            <build>
+                <finalName>fatjar</finalName>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
