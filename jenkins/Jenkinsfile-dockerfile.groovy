@@ -21,7 +21,7 @@ try {
             }
             stage("Compile/Test/Build JAR") {
                 sh "${mvnCmd} clean package -Popenshift"
-            }g
+            }
             stage("Build Image") {
                 sh "oc start-build ${appName} --from-file=target/fatjar.jar -n ${project}"
                 openshiftVerifyBuild bldCfg: "${appName}", namespace: project, waitTime: '5', waitUnit: 'min'
