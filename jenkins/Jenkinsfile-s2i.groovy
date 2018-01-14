@@ -28,11 +28,11 @@ try {
             }
             stage("Deploy Image") {
                 openshiftDeploy deploymentConfig: appName, namespace: project
+                openshiftVerifyDeployment bldCfg: "${appName}", namespace: project, waitTime: '2', waitUnit: 'min'
             }
 
             stage("Webservice Testing") {
                 def appURL = sh(script: ocCmd + " get routes -l app=${appName} -o template --template {{range.items}}{{.spec.host}}{{end}}", returnStdout:true)
-                sleep 5
                 sh(script: "curl ${appURL}/health | grep 'UP'")
             }
         }
