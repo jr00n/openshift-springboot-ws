@@ -1,0 +1,147 @@
+apiVersion: v1
+kind: List
+metadata:
+  name: springboot-ws-s2i
+items:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: springboot-ws-s2i
+    name: springboot-ws-s2i
+  spec: {}
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: redhat-openjdk18-openshift
+    annotations:
+      openshift.io/display-name: Red Hat OpenJDK 8
+  spec:
+    dockerImageRepository: registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift
+    tags:
+    - name: '1.1'
+      annotations:
+        openshift.io/display-name: Red Hat OpenJDK 8
+        description: Build and run Java applications using Maven and OpenJDK 8.
+        iconClass: icon-jboss
+        tags: builder,java,xpaas,openjdk
+        supports: java:8,xpaas:1.4
+        version: '1.1'
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      app: springboot-ws-s2i
+    name: springboot-ws-s2i
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: springboot-ws-s2i:latest
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      type: Binary
+      binary:
+        asFile: application.jar
+    strategy:
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: 'redhat-openjdk18-openshift:latest'
+      type: Source
+    triggers: {}
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: springboot-ws-s2i
+    name: springboot-ws-s2i
+  spec:
+    replicas: 1
+    selector:
+      app: springboot-ws-s2i
+      deploymentconfig: springboot-ws-s2i
+    strategy:
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          app: springboot-ws-s2i
+          deploymentconfig: springboot-ws-s2i
+      spec:
+        containers:
+        - image: springboot-ws-s2i:latest
+          imagePullPolicy: Always
+          name: springboot-ws-s2i
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - springboot-ws-s2i
+        from:
+          kind: ImageStreamTag
+          name: springboot-ws-s2i:latest
+      type: ImageChange
+  status: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: springboot-ws-s2i
+    name: springboot-ws-s2i
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: springboot-ws-s2i
+      deploymentconfig: springboot-ws-s2i
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: springboot-ws-s2i
+    labels:
+      app: springboot-ws-s2i
+  spec:
+    to:
+      kind: Service
+      name: springboot-ws-s2i
+      weight: 100
+    port:
+      targetPort: 8080-tcp
+    wildcardPolicy: None
